@@ -3,14 +3,14 @@ import pandas as pd
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import gensim.downloader
-from gensim.models import Word2Vec
+from gensim.models import Word2Vec, KeyedVectors
 import os
 
 
 MODEL_NAME = "pretrained.model"
 
 
-def preprocess_data(data: pd.Series, vector_model: Word2Vec):
+def preprocess_data(data: pd.Series, vector_model: KeyedVectors):
     """
     Transforms a Series of data into a list of list of word vectors for each document
 
@@ -20,9 +20,9 @@ def preprocess_data(data: pd.Series, vector_model: Word2Vec):
 
     vectors = []
     for i, text in data.iteritems():
-        tokenized_text = [word for word in word_tokenize(text) if word not in stopwords]
+        tokenized_text = [word for word in word_tokenize(text) if word not in stopwords.words()]
 
-        vectors.append([vector_model.wv[word] for word in tokenized_text])
+        vectors.append([vector_model[word] if word in vector_model.key_to_index else np.zeros(300) for word in tokenized_text])
 
     return vectors
 
@@ -33,13 +33,9 @@ if __name__ == '__main__':
     # validation = pd.read_csv("data/validation.csv")
 
     if os.path.exists(MODEL_NAME):
-        vector_model = Word2Vec.load(MODEL_NAME)
+        vector_model = KeyedVectors.load(MODEL_NAME)
     else:
         vector_model = gensim.downloader.load('fasttext-wiki-news-subwords-300')
         vector_model.save(MODEL_NAME)
-
-
-
-
 
     print(preprocess_data(train.head()["article"], vector_model))
