@@ -10,6 +10,8 @@ from rouge_score.rouge_scorer import RougeScorer
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 import matplotlib.pyplot as plt
+from seq2seq import Seq2Seq
+from collections import Counter
 
 MODEL_NAME = "pretrained.model"
 
@@ -102,10 +104,27 @@ def plot_scores(scores):
     plt.show()
 
 
+def print_results(scores, model_name):
+    print(f"{model_name} Mean F1:  {scores['fmeasure'].mean()}")
+    print(f"{model_name} Mean Bleu Score: {scores['bleu_score'].mean()}")
+    print(f"{model_name} Mean Precision: {scores['precision'].mean()}")
+    print(f"{model_name} Mean Recall: {scores['recall'].mean()}\n")
+
+
 if __name__ == '__main__':
-    # train = pd.read_csv("data/train.csv")
+    train = pd.read_csv("data/train.csv")
+    validation = pd.read_csv("data/validation.csv")
     test = pd.read_csv("data/test.csv")
-    # validation = pd.read_csv("data/validation.csv")
+
+    vocab = []
+    vocab_counts = Counter()
+    threshold = 5
+    for i, row in train.iterrows():
+        vocab_counts.update(row['article'].split())
+
+    for word, occurence_count in vocab_counts.items():
+        if occurence_count >= threshold:
+            vocab.append(word)
 
     if os.path.exists(MODEL_NAME):
         vector_model = KeyedVectors.load(MODEL_NAME)
@@ -116,11 +135,19 @@ if __name__ == '__main__':
     # print(preprocess_data(train.head()["article"], vector_model))
     scorer = RougeScorer(["rouge2"], use_stemmer=True)
     baseline_scores = perform_baseline(test, scorer)
-    print(baseline_scores)
-    print(f"Mean F1:  {baseline_scores['fmeasure'].mean()}")
-    print(f"Mean Bleu Score: {baseline_scores['bleu_score'].mean()}")
-    print(f"Mean Precision: {baseline_scores['precision'].mean()}")
-    print(f"Mean Recall: {baseline_scores['recall'].mean()}")
-    plot_scores(baseline_scores)
+    print_results(baseline_scores, "Baseline Model")
 
+    seq2seq_model = Seq2Seq(256, 100, vocab, .01)
+
+    inputs = train['article'].values.tolist()
+    references = train['highlights'].values.tolist()
+    val_inputs = validation['article'].values.tolist()
+
+    seq2seq_model.train_model(inputs, references, epochs=10)
+    results = seq2seq_model.predict(val_inputs)
+    rouge_scores = rogue_score(results, references, scorer)
+    bleu_scores = bleu_score(results, references)
+
+    seq2seq_scores = pd.merge(rouge_scores, bleu_scores, on=['prediction', 'reference'])
+    print_results(seq2seq_scores, "Seq2Seq Model")
 
