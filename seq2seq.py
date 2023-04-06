@@ -73,9 +73,22 @@ class Seq2Seq(Module, BaseModel):
 
         return ' '.join(predictions)
 
-    def train_model(self, train_data: List[str], references: List[str]) -> None:
+    def train_model(self, train_data: List[str], references: List[str], epochs: int = 10) -> None:
         loss = CrossEntropyLoss()
         optimizer = RMSprop(self.parameters(), lr=self.learning_rate)
+
+        for epoch in range(epochs):
+            for article, reference in zip(train_data, references):
+                self.zero_grad()
+
+                inputs = self.sentence2tensor(article)
+                targets = self.sentence2tensor(reference)
+
+                outputs = self(inputs)
+
+                loss_val = loss(outputs, targets)
+                loss_val.backward()
+                optimizer.step()
 
     def predict(self, data: List[str]) -> List[str]:
         predictions = []
