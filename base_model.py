@@ -9,7 +9,7 @@ class BaseModel:
     def __init__(self):
         pass
 
-    def train(self, train_data: List[str], references: List[str]) -> None:
+    def train_model(self, train_data: List[str], references: List[str]) -> None:
         """
         Trains the model on the given training data
 
