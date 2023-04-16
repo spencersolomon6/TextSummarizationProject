@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from seq2seq import Seq2Seq
 from collections import Counter
 from typing import List
+from transformers import pipeline
 
 MODEL_NAME = "pretrained.model"
 
@@ -113,6 +114,25 @@ def print_results(scores, model_name):
     print(f"{model_name} Mean Recall: {scores['recall'].mean()}\n")
 
 
+def perform_transformer_baseline(inputs: List[List[str]], reference_summaries: List[List[str]], scorer) -> pd.DataFrame:
+    summaries = []
+    references = []
+    summarizer = pipeline("summarization", model="google/pegasus-xsum")
+
+    for (article, reference) in zip(inputs, reference_summaries):
+        article = ' '.join(article)
+        article = article[:500]
+        summaries.append(word_tokenize(summarizer(article)[0]["summary_text"]))
+        references.append(reference)
+
+    rouge_scores = rogue_score(summaries, references, scorer)
+    bleu_scores = bleu_score(summaries, references)
+
+    scores = pd.merge(rouge_scores, bleu_scores, on='reference')
+
+    return scores
+
+
 if __name__ == '__main__':
     print("Beginning Encoder-Decoder Model Training")
 
@@ -120,19 +140,22 @@ if __name__ == '__main__':
     validation = pd.read_csv("data/validation.csv")
     test = pd.read_csv("data/test.csv")
 
-    training_inputs = preprocess_data(train["article"][100:])
-    training_references = preprocess_data(train["highlights"][100:])
-    validation_inputs = preprocess_data(validation["article"][100:])
-    validation_references = preprocess_data(validation["article"][100:])
-
-    vector_model = Word2Vec(sentences=training_inputs + training_references, size=300, window=5, min_count=1, workers=4, sg=1)
-    vector_model.save("original_w2v.npy")
-    #vector_model = Word2Vec.load("original_w2v.npy")
-
-    print("Trained Word2Vec Model... Beginning Training")
-
+    training_inputs = preprocess_data(train["article"][:1000])
+    training_references = preprocess_data(train["highlights"][:1000])
+    validation_inputs = preprocess_data(validation["article"][:1000])
+    validation_references = preprocess_data(validation["highlights"][:1000])
 
     scorer = RougeScorer(["rouge2"], use_stemmer=True)
+
+    transformer_test_scores = perform_transformer_baseline(validation_inputs, validation_references, scorer)
+    print_results(transformer_test_scores, "Transformer Baseline")
+    transformer_test_scores.to_csv("transformer_test_scores.csv")
+
+    vector_model = Word2Vec(sentences=training_inputs, size=300, window=5, min_count=1, workers=4, sg=1)
+    vector_model.save("original_w2v.npy")
+    # vector_model = Word2Vec.load("original_w2v.npy")
+
+    print("Trained Word2Vec Model... Beginning Training")
     # baseline_scores = perform_baseline(test, scorer)
     # print_results(baseline_scores, "Baseline Model")
 
@@ -149,9 +172,7 @@ if __name__ == '__main__':
 
     seq2seq_scores = pd.merge(rouge_scores, bleu_scores, on='reference')
     print_results(seq2seq_scores, "Seq2Seq Model")
-
     seq2seq_scores.to_csv("validation_scores.csv")
-    print(seq2seq_scores)
 
     plt.plot(range(len(losses)), losses)
     plt.xlabel("Epoch")
