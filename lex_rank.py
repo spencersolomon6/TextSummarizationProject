@@ -4,14 +4,14 @@ from collections import defaultdict
 from base_model import BaseModel
 
 import numpy as np
-from nltk.tokenize import sent_tokenize
+from nltk.tokenize import sent_tokenize, RegexpTokenizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 import pandas as pd
 import zipfile
 from rouge_score.rouge_scorer import RougeScorer
-from main import bleu_score, print_results, rogue_score
+from main import bleu_score, print_results, rogue_score, preprocess_data
 
 
 """
@@ -22,7 +22,7 @@ from main import bleu_score, print_results, rogue_score
 """
 
 class LexRank(BaseModel):
-    def __init__(self, threshold: float = 0.08):
+    def __init__(self, threshold: float = 0.01):
         """            
         Parameters:
         -----------
@@ -64,7 +64,7 @@ class LexRank(BaseModel):
 
         for i in range(n):
             for j in range(n):
-                if mat[i][j] > self.threshold:
+                if mat[i][j] >= self.threshold:
                     degrees[i] += 1
                 else:
                     mat[i][j] = 0
@@ -93,13 +93,31 @@ class LexRank(BaseModel):
 
         p_t_min_1 = np.ones(shape=len(degrees))/len(degrees)
         p_t = None
-        for _ in range(10):
+        for _ in range(100):
             p_t = np.matmul(sim_mat.T, p_t_min_1)
 
         return p_t
 
-    def __preprocess_data(self, data: str):
-        return sent_tokenize(data)
+    def __preprocess_data(self, data: str) -> List[str]:
+        """
+        Performs pre-processing on the given string corpus by lowering all
+        words and removing punctuation.
+
+        
+
+        """
+        sentences = sent_tokenize(data)
+        remove_punct = RegexpTokenizer(r'\w+')
+
+        cleaned = []
+        for sent in sentences:
+            lowered = sent.lower()
+            tokens = remove_punct.tokenize(lowered)
+            clean_sent = " ".join(tokens)
+            cleaned.append(clean_sent)
+        
+        return cleaned
+
 
 
     def predict(self, data: str, k: int) -> str:
@@ -126,41 +144,33 @@ class LexRank(BaseModel):
         scores = self.__power_method(sim_mat, degrees)
 
         indices_sorted_by_score = np.argsort(scores)
-
+        indices_sorted_by_score = indices_sorted_by_score[::-1] # reverse to get high to low order
         summary = [processed_data[i] for i in indices_sorted_by_score][: k]
 
-        summary = " ".join(summary)
+        tokenized_summary = []
+        for sent in summary:
+            tokenized_summary += sent.split()
 
-        return summary
+        return tokenized_summary
 
 
 if __name__ == "__main__":
     model = LexRank()
-    k = 5
+    k = 2
     data = None
-    with zipfile.ZipFile("data.zip") as z:
-        # open the csv file in the dataset
-        with z.open("cnn_dailymail/test.csv") as f:
-            
-            # read the dataset
-            data = pd.read_csv(f)
-            
-            # display dataset
+
+    with zipfile.ZipFile("data.zip") as archive:
+        with archive.open("cnn_dailymail/test.csv") as f:
+            data = pd.read_csv(f)            
             print(data.head())
 
-    articles = data["article"].tolist()#[0:10]
-    references = data["highlights"].tolist()#[0:10]
-
-    # print(articles[0:2])
-
+    articles = data["article"].tolist()[0:1000]
+    references = preprocess_data(data["highlights"])[0:1000]
     predictions = [model.predict(article, k) for article in articles]
 
     scorer = RougeScorer(["rouge1", "rouge2"], use_stemmer=True)
-
-    print(predictions[0:5])
-    print(references[0:5])
     rouge_scores = rogue_score(predictions, references, scorer)
     bleu_scores = bleu_score(predictions, references)
 
-    lexrank_scores = pd.merge(rouge_scores, bleu_scores, on=['prediction', 'reference'])
+    lexrank_scores = pd.merge(rouge_scores, bleu_scores, on='reference')
     print_results(lexrank_scores, "LexRank")

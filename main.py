@@ -44,7 +44,7 @@ def rogue_score(predictions: List[List[str]], references: List[List[str]], score
     :return: A DataFrame containing the prediction, reference and scores for each example
     """
 
-    scores = pd.DataFrame(columns=['prediction', 'reference', 'precision', 'recall', 'fmeasure'])
+    scores = pd.DataFrame(columns=['prediction', 'reference'])
     for predicted, reference in zip(predictions, references):
         predicted = ' '.join(predicted)
         reference = ' '.join(reference)
@@ -110,10 +110,15 @@ def plot_scores(scores):
 
 
 def print_results(scores, model_name):
-    print(f"{model_name} Mean F1:  {scores['fmeasure'].mean()}")
-    print(f"{model_name} Mean Bleu Score: {scores['bleu_score'].mean()}")
-    print(f"{model_name} Mean Precision: {scores['precision'].mean()}")
-    print(f"{model_name} Mean Recall: {scores['recall'].mean()}\n")
+    print(f"{model_name} Mean Bleu Score: {scores['bleu_score'].mean()}\n")
+
+    print(f"{model_name} Mean Unigram Recall: {scores['unigram_recall'].mean()}")
+    print(f"{model_name} Mean Unigram Precision: {scores['unigram_precision'].mean()}")
+    print(f"{model_name} Mean Unigram F-Measure: {scores['unigram_fmeasure'].mean()}\n")
+
+    print(f"{model_name} Mean Bigram Recall: {scores['bigram_recall'].mean()}")
+    print(f"{model_name} Mean Bigram Precision: {scores['bigram_precision'].mean()}")
+    print(f"{model_name} Mean Bigram F-Measure: {scores['bigram_fmeasure'].mean()}")
 
 
 if __name__ == '__main__':
