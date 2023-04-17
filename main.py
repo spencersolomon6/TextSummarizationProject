@@ -35,7 +35,7 @@ def preprocess_data(data: pd.Series) -> List[List[str]]:
     return clean_texts
 
 
-def rogue_score(predictions, references, scorer: RougeScorer):
+def rogue_score(predictions: List[List[str]], references: List[List[str]], scorer: RougeScorer):
     """
     Returns a DataFrame of scores for each prediction/reference pair
 
@@ -59,7 +59,7 @@ def rogue_score(predictions, references, scorer: RougeScorer):
     return scores
 
 
-def bleu_score(predictions, references):
+def bleu_score(predictions: List[List[str]], references: List[List[str]]):
 
     scores = pd.DataFrame(columns=['prediction', 'reference', 'bleu_score'])
     smooth = SmoothingFunction()
