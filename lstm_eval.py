@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from transformers import AutoTokenizer, DataCollatorForSeq2Seq, AutoModelForSeq2SeqLM, Seq2SeqTrainer, \
     Seq2SeqTrainingArguments, SummarizationPipeline
 import evaluate
-from seq2seq import Seq2Seq
+from models.seq2seq import Seq2Seq
 from utils import preprocess_data, preprocess_for_transformer, print_results, bleu_score, rogue_score, perform_baseline
 
 

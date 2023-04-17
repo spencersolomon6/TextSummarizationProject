@@ -6,7 +6,7 @@ from typing import List
 import pandas as pd
 import matplotlib.pyplot as plt
 from transformers import AutoTokenizer
-from seq2seq import CustomDataset
+from models.seq2seq import CustomDataset
 
 
 def preprocess_data(data: pd.Series) -> List[List[str]]:

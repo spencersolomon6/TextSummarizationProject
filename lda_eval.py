@@ -5,7 +5,7 @@ from rouge_score.rouge_scorer import RougeScorer
 from nltk.corpus import stopwords
 from nltk.tokenize import  RegexpTokenizer
 from typing import List
-from lda import LDA 
+from models.lda import LDA 
 
 
 def preprocess_data(data: pd.Series) -> List[List[str]]:

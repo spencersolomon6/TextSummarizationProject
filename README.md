@@ -3,9 +3,9 @@
 For our final project for CS6120: NLP, we decided to compare several ways to summarize text.
 
 We have the following models:
-- seq2seq
-- LDA
-- LexRank
+- Sequence-to-Sequence LSTM (abstractive)
+- LDA (extractive)
+- LexRank (extrative)
 
 The baseline for comparison was the implementation of the TextRank algorithm in the `gensim` package.
 

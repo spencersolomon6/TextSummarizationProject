@@ -1,7 +1,7 @@
 import numpy as np
 import tqdm
 from typing import List
-from base_model import BaseModel
+from models.base_model import BaseModel
 from nltk.tokenize import sent_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
