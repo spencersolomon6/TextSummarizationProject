@@ -5,7 +5,7 @@ For our final project for CS6120: NLP, we decided to compare several ways to sum
 We have the following models:
 - Sequence-to-Sequence LSTM (abstractive)
 - LDA (extractive)
-- LexRank (extrative)
+- LexRank (extractive)
 
 The baseline for comparison was the implementation of the TextRank algorithm in the `gensim` package.
 
@@ -18,3 +18,7 @@ Then run the following command to install the necessary packages:
 pip install -r requirements.txt
 ```
 
+## Authors
+- Spencer Solomon
+- Seamus Rioux
+- Talal Siddiqui

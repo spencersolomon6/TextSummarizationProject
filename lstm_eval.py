@@ -10,6 +10,18 @@ from models.seq2seq import Seq2Seq
 from utils import preprocess_data, preprocess_for_transformer, print_results, bleu_score, rogue_score, perform_baseline
 
 
+"""
+    Evaluation of the Sequence-to-Sequence LSTM model.
+
+    Before running this file, make sure you have extracted the 3 data files
+    from the CNN-Dailymail dataset from Kaggle.
+
+    Make sure there is a "data" folder in the same place that this file is run.
+    That folder should have the following three files: "train.csv", "validation.csv",
+    and "test.csv"
+
+"""
+
 MODEL_NAME = "pretrained.model"
 TRANSFORMER_MODEL_DIR = "transformer_model"
 tokenizer = AutoTokenizer.from_pretrained(TRANSFORMER_MODEL_DIR)
