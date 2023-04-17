@@ -1,2 +1,4 @@
 data/
+data.zip
 *.model
+__pycache__/

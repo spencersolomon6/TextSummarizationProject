@@ -4,9 +4,14 @@ from collections import defaultdict
 from base_model import BaseModel
 
 import numpy as np
+from nltk.tokenize import sent_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+import pandas as pd
+import zipfile
+from rouge_score.rouge_scorer import RougeScorer
+from main import bleu_score, print_results, rogue_score
 
 
 """
@@ -38,7 +43,7 @@ class LexRank(BaseModel):
         """
         pass
 
-    def __process_cos_sim_mat(self, cosine_mat: np.ndarray, n: int):
+    def __process_cos_sim_mat(self, cosine_mat: np.ndarray):
         """
         Processes the given cosine similarity matrix by removing values that are above
         the similarity threshold and then normalizing each value by the degree of its row.
@@ -47,16 +52,15 @@ class LexRank(BaseModel):
         -----------
             cosine_mat : ndarray
                 Cosine similarity matrix to be processed
-            n : int
-                Dimension of cosine_mat, which is a (n x n) matrix
         
         Returns:
             ndarray : the processed similarity matrix
             defaultdict : a dictionary with the degree of each row
         """
-
         mat = copy.deepcopy(cosine_mat)
         degrees = defaultdict(int)
+
+        n = cosine_mat.shape[0]
 
         for i in range(n):
             for j in range(n):
@@ -94,15 +98,18 @@ class LexRank(BaseModel):
 
         return p_t
 
+    def __preprocess_data(self, data: str):
+        return sent_tokenize(data)
 
-    def predict(self, data: List[str], k: int) -> List[str]:
+
+    def predict(self, data: str, k: int) -> str:
         """
         Summarizes the given data by extracting the top k sentences
         in the data.
         
         Parameters:
         -----------
-            data : List[str]
+            data : str
                 The corpus of data from which to extract the summary from.
             k : int
                 The number of sentences to be included in the summary.
@@ -111,21 +118,49 @@ class LexRank(BaseModel):
             List[str] : an extractice summary of the given corpus
         """
         vectorizer = TfidfVectorizer()
-        tfidf = vectorizer.fit_transform(data)
+        processed_data = self.__preprocess_data(data)
+        tfidf = vectorizer.fit_transform(processed_data)
         cosine_mat = cosine_similarity(tfidf, tfidf)
 
-        n = len(data)
-
-        sim_mat, degrees = self.__process_cos_sim_mat(cosine_mat, n)
+        sim_mat, degrees = self.__process_cos_sim_mat(cosine_mat)
         scores = self.__power_method(sim_mat, degrees)
 
         indices_sorted_by_score = np.argsort(scores)
 
-        summary = [data[i] for i in indices_sorted_by_score][: k]
+        summary = [processed_data[i] for i in indices_sorted_by_score][: k]
+
+        summary = " ".join(summary)
 
         return summary
 
 
-        
+if __name__ == "__main__":
+    model = LexRank()
+    k = 5
+    data = None
+    with zipfile.ZipFile("data.zip") as z:
+        # open the csv file in the dataset
+        with z.open("cnn_dailymail/test.csv") as f:
+            
+            # read the dataset
+            data = pd.read_csv(f)
+            
+            # display dataset
+            print(data.head())
 
+    articles = data["article"].tolist()#[0:10]
+    references = data["highlights"].tolist()#[0:10]
 
+    # print(articles[0:2])
+
+    predictions = [model.predict(article, k) for article in articles]
+
+    scorer = RougeScorer(["rouge1", "rouge2"], use_stemmer=True)
+
+    print(predictions[0:5])
+    print(references[0:5])
+    rouge_scores = rogue_score(predictions, references, scorer)
+    bleu_scores = bleu_score(predictions, references)
+
+    lexrank_scores = pd.merge(rouge_scores, bleu_scores, on=['prediction', 'reference'])
+    print_results(lexrank_scores, "LexRank")
