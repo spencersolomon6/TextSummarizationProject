@@ -5,7 +5,7 @@ from rouge_score.rouge_scorer import RougeScorer
 from nltk.corpus import stopwords
 from nltk.tokenize import  RegexpTokenizer
 from typing import List
-from lda import LDA 
+from models.lda import LDA 
 from utils import preprocess_data, rogue_score, bleu_score, print_results
 
 

@@ -1,5 +1,5 @@
 from typing import List
-from base_model import BaseModel
+from models.base_model import BaseModel
 from torch.nn import LSTM, Module, Linear, Softmax, CrossEntropyLoss
 from torch.optim import Adam
 import torch
