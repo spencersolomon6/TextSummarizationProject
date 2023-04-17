@@ -4,14 +4,14 @@ from collections import defaultdict
 from base_model import BaseModel
 
 import numpy as np
-from nltk.tokenize import sent_tokenize, RegexpTokenizer
+from nltk.tokenize import sent_tokenize, word_tokenize, RegexpTokenizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 import pandas as pd
 import zipfile
 from rouge_score.rouge_scorer import RougeScorer
-from main import bleu_score, print_results, rogue_score, preprocess_data
+from main import bleu_score, print_results, rogue_score
 
 
 """
@@ -98,19 +98,15 @@ class LexRank(BaseModel):
 
         return p_t
 
-    def __preprocess_data(self, data: str) -> List[str]:
+    def __preprocess_data(self, data: List[str]) -> List[str]:
         """
         Performs pre-processing on the given string corpus by lowering all
         words and removing punctuation.
-
-        
-
         """
-        sentences = sent_tokenize(data)
         remove_punct = RegexpTokenizer(r'\w+')
 
         cleaned = []
-        for sent in sentences:
+        for sent in data:
             lowered = sent.lower()
             tokens = remove_punct.tokenize(lowered)
             clean_sent = " ".join(tokens)
@@ -136,7 +132,8 @@ class LexRank(BaseModel):
             List[str] : an extractice summary of the given corpus
         """
         vectorizer = TfidfVectorizer()
-        processed_data = self.__preprocess_data(data)
+        sentences = sent_tokenize(data)
+        processed_data = self.__preprocess_data(sentences)
         tfidf = vectorizer.fit_transform(processed_data)
         cosine_mat = cosine_similarity(tfidf, tfidf)
 
@@ -145,11 +142,11 @@ class LexRank(BaseModel):
 
         indices_sorted_by_score = np.argsort(scores)
         indices_sorted_by_score = indices_sorted_by_score[::-1] # reverse to get high to low order
-        summary = [processed_data[i] for i in indices_sorted_by_score][: k]
-
+        summary = [sentences[i] for i in indices_sorted_by_score][: k]
+        
         tokenized_summary = []
         for sent in summary:
-            tokenized_summary += sent.split()
+            tokenized_summary += word_tokenize(sent)
 
         return tokenized_summary
 
@@ -157,15 +154,15 @@ class LexRank(BaseModel):
 if __name__ == "__main__":
     model = LexRank()
     k = 2
+    n_samples = 1000
     data = None
 
     with zipfile.ZipFile("data.zip") as archive:
         with archive.open("cnn_dailymail/test.csv") as f:
             data = pd.read_csv(f)            
-            print(data.head())
 
-    articles = data["article"].tolist()[0:1000]
-    references = preprocess_data(data["highlights"])[0:1000]
+    articles = data["article"].tolist()[0:n_samples]
+    references = [summary.split() for summary in data["highlights"].tolist()[0:n_samples]]
     predictions = [model.predict(article, k) for article in articles]
 
     scorer = RougeScorer(["rouge1", "rouge2"], use_stemmer=True)
