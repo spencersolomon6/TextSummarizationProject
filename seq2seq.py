@@ -1,13 +1,25 @@
-from collections import Counter
 from typing import List
 from base_model import BaseModel
-from nltk.tokenize import word_tokenize
-from torch.nn import LSTM, Embedding, Module, Linear, Softmax, CrossEntropyLoss
-from torch.optim import RMSprop, Adam
+from torch.nn import LSTM, Module, Linear, Softmax, CrossEntropyLoss
+from torch.optim import Adam
 import torch
 import numpy as np
-from gensim.models import KeyedVectors, Word2Vec
+from gensim.models import Word2Vec
 import random
+
+
+class CustomDataset(torch.utils.data.Dataset):
+    def __init__(self, encodings, labels):
+        self.encodings = encodings
+        self.labels = labels
+
+    def __getitem__(self, item):
+        val = {key: torch.tensor(vector[item]) for key, vector in self.encodings.items()}
+        val['labels'] = torch.tensor(self.labels[item])
+        return val
+
+    def __len__(self):
+        return len(self.labels)
 
 
 class Encoder(Module):

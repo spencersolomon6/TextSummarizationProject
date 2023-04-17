@@ -20,40 +20,42 @@ class LDA(BaseModel):
         distribution = lda.fit_transform(train_data)
         return lda, distribution
 
-
     def predict(self, data: List[str]) -> List[str]:
         summaries = []
         vectorizer = TfidfVectorizer(stop_words = "english")
         for doc in tqdm.tqdm(data):
+            
             sents = [sent for sent in sent_tokenize(doc)  if len(sent.split()) > 6]
             try:
                 document_model = vectorizer.fit_transform([" ".join(sents)])
-                lda, distribution = self.train(document_model)
+                model, distribution = self.train(document_model)
             except:
                 print("Error", doc)
                 continue
-            distribution_sentences = []
-            ranked_list = {}
-            for i, sent in enumerate(sents):
-                distribution_sentence = lda.transform(vectorizer.transform([sent]))
-                distribution_sentences.append(distribution_sentence)
-                #print(np.array(cosine_similarity(distribution, distribution_sentence)).flatten())   
-                ranked_list[i] = np.array(cosine_similarity(distribution, distribution_sentence)).flatten()[0]
 
-
-            ranked_list = sorted(ranked_list.items(), key=lambda x:x[1],reverse=True)
-            #print(ranked_list)
-
-            summary = []
-            for i, rank in ranked_list:
-                if(len(summary) < self.no_sentences):
-                    if(summary == []):
-                        summary.append(sents[i])
-                    else:
-                        distribution_summary = lda.transform(vectorizer.transform([" ".join(summary)]))
-                        cur_sent = distribution_sentences[i]
-                        if(cosine_similarity(cur_sent, distribution_summary) < 0.66):
-                            summary.append(sents[i])
-
-            summaries.append([" ".join(summary)])
+            total_sentences = []
+            picked = set()
+    
+            
+            for _ in range(self.no_sentences):
+                best_sentence = ""
+                best_score = float("-inf")
+                order = 0
+                for sentence in sents:
+                    if(order in picked):
+                        continue
+                    new_sentences = list(map(lambda x: x[0], total_sentences))
+                    new_sentences.append(sentence)
+                    
+                    distribution_sentence = model.transform(vectorizer.transform([" ".join(new_sentences)]))
+                    
+                    current_score = cosine_similarity(distribution[0].reshape(1, -1), distribution_sentence[0].reshape(1, -1))
+                    if(current_score > best_score):
+                        best_score = current_score
+                        best_sentence = [sentence, order]
+                    order += 1
+                if(best_sentence != ""):
+                    total_sentences.append(best_sentence)
+                    picked.add(best_sentence[1])
+            summaries.append(" ".join(list(map(lambda x: x[0], sorted(total_sentences, key = lambda x: x[1])))))
         return summaries
