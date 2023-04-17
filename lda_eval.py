@@ -1,15 +1,20 @@
-from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 import pandas as pd
-from gensim.summarization.summarizer import summarize
 from rouge_score.rouge_scorer import RougeScorer
-from nltk.corpus import stopwords
-from nltk.tokenize import  RegexpTokenizer
-from typing import List
 from models.lda import LDA 
 from utils import preprocess_data, rogue_score, bleu_score, print_results
 
 
-stop_words = set(stopwords.words('english'))
+"""
+    Evaluation of the LDA model.
+
+    Before running this file, make sure you have extracted the 3 data files
+    from the CNN-Dailymail dataset from Kaggle.
+
+    Make sure there is a "data" folder in the same place that this file is run.
+    That folder should have the following three files: "train.csv", "validation.csv",
+    and "test.csv"
+"""
+
 
 test = pd.read_csv("data/test.csv")
 
