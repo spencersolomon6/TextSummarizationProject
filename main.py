@@ -49,14 +49,17 @@ def rogue_score(predictions: List[List[str]], references: List[List[str]], score
     :return: A DataFrame containing the prediction, reference and scores for each example
     """
 
-    scores = pd.DataFrame(columns=['prediction', 'reference', 'precision', 'recall', 'fmeasure'])
+    scores = pd.DataFrame(columns=['prediction', 'reference'])
     for predicted, reference in zip(predictions, references):
         predicted = ' '.join(predicted)
         reference = ' '.join(reference)
 
-        score = scorer.score(predicted, reference)['rouge2']
-        score_dict = pd.DataFrame([{'prediction': predicted, 'reference': reference, 'precision': score.precision,
-                                    'recall': score.recall, 'fmeasure': score.fmeasure}])
+        score = scorer.score(predicted, reference)
+        score1 = score['rouge1']
+        score2 = score['rouge2']
+        score_dict = pd.DataFrame([{'prediction': predicted, 'reference': reference, 'unigram_precision': score1.precision,
+                                    'unigram_recall': score1.recall, 'unigram_fmeasure': score1.fmeasure, 'bigram_precision': score2.precision,
+                                    'bigram_recall': score2.recall, 'bigram_fmeasure': score2.fmeasure}])
 
         scores = pd.concat([scores, score_dict], ignore_index=True)
 
@@ -112,10 +115,15 @@ def plot_scores(scores):
 
 
 def print_results(scores, model_name):
-    print(f"{model_name} Mean F1:  {scores['fmeasure'].mean()}")
-    print(f"{model_name} Mean Bleu Score: {scores['bleu_score'].mean()}")
-    print(f"{model_name} Mean Precision: {scores['precision'].mean()}")
-    print(f"{model_name} Mean Recall: {scores['recall'].mean()}\n")
+    print(f"{model_name} Mean Bleu Score: {scores['bleu_score'].mean()}\n")
+
+    print(f"{model_name} Mean Unigram Recall: {scores['unigram_recall'].mean()}")
+    print(f"{model_name} Mean Unigram Precision: {scores['unigram_precision'].mean()}")
+    print(f"{model_name} Mean Unigram F-Measure: {scores['unigram_fmeasure'].mean()}\n")
+
+    print(f"{model_name} Mean Bigram Recall: {scores['bigram_recall'].mean()}")
+    print(f"{model_name} Mean Bigram Precision: {scores['bigram_precision'].mean()}")
+    print(f"{model_name} Mean Bigram F-Measure: {scores['bigram_fmeasure'].mean()}")
 
 
 def preprocess_for_transformer(data: pd.DataFrame, tokenizer: AutoTokenizer):
@@ -214,7 +222,7 @@ if __name__ == '__main__':
 
     print("Read in inputs... Beginning training Transformer")
 
-    scorer = RougeScorer(["rouge2"], use_stemmer=True)
+    scorer = RougeScorer(["rouge1", "rouge2"], use_stemmer=True)
 
     transformer_test_scores = train_and_eval_transformer(train[:100], validation[:100], train[:500], scorer, False)
     print_results(transformer_test_scores, "Transformer")
@@ -227,6 +235,7 @@ if __name__ == '__main__':
     # vector_model = Word2Vec.load("original_w2v.npy")
 
     print("Trained Word2Vec Model... Beginning Training Custom Seq2Seq Model")
+
     # baseline_scores = perform_baseline(test, scorer)
     # print_results(baseline_scores, "Baseline Model")
 
