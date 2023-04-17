@@ -140,10 +140,10 @@ if __name__ == '__main__':
     validation = pd.read_csv("data/validation.csv")
     test = pd.read_csv("data/test.csv")
 
-    training_inputs = preprocess_data(train["article"][:1000])
-    training_references = preprocess_data(train["highlights"][:1000])
-    validation_inputs = preprocess_data(validation["article"][:1000])
-    validation_references = preprocess_data(validation["highlights"][:1000])
+    training_inputs = preprocess_data(train["article"][:3000])
+    training_references = preprocess_data(train["highlights"][:3000])
+    validation_inputs = preprocess_data(validation["article"][:3000])
+    validation_references = preprocess_data(validation["highlights"][:3000])
 
     scorer = RougeScorer(["rouge2"], use_stemmer=True)
 
