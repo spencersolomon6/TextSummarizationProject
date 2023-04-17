@@ -6,7 +6,13 @@ from rouge_score.rouge_scorer import RougeScorer
 from utils import bleu_score, print_results, rogue_score
 
 """
-Evaluating the LexRank model
+    Evaluating the LexRank model.
+
+    Make sure there is a "data.zip" file in the same directory as this file
+    when it is being run. The zip archive should have an inner folder called
+    "cnn_dailymail" which should have the files "test.csv", "train.csv", and 
+    "validate.csv".
+
 """
 
 if __name__ == "__main__":
