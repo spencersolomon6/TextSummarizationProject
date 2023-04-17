@@ -34,7 +34,7 @@ def preprocess_data(data: pd.Series) -> List[List[str]]:
     return clean_texts
 
 
-def rogue_score(predictions, references, scorer: RougeScorer):
+def rogue_score(predictions: List[List[str]], references: List[List[str]], scorer: RougeScorer):
     """
     Returns a DataFrame of scores for each prediction/reference pair
 
@@ -49,16 +49,19 @@ def rogue_score(predictions, references, scorer: RougeScorer):
         predicted = ' '.join(predicted)
         reference = ' '.join(reference)
 
-        score = scorer.score(predicted, reference)['rouge2']
-        score_dict = pd.DataFrame([{'prediction': predicted, 'reference': reference, 'precision': score.precision,
-                                    'recall': score.recall, 'fmeasure': score.fmeasure}])
+        score = scorer.score(predicted, reference)
+        score1 = score['rouge1']
+        score2 = score['rouge2']
+        score_dict = pd.DataFrame([{'prediction': predicted, 'reference': reference, 'unigram_precision': score1.precision,
+                                    'unigram_recall': score1.recall, 'unigram_fmeasure': score1.fmeasure, 'bigram_precision': score2.precision,
+                                    'bigram_recall': score2.recall, 'bigram_fmeasure': score2.fmeasure}])
 
         scores = pd.concat([scores, score_dict], ignore_index=True)
 
     return scores
 
 
-def bleu_score(predictions, references):
+def bleu_score(predictions: List[List[str]], references: List[List[str]]):
 
     scores = pd.DataFrame(columns=['prediction', 'reference', 'bleu_score'])
     smooth = SmoothingFunction()
@@ -132,7 +135,7 @@ if __name__ == '__main__':
     print("Trained Word2Vec Model... Beginning Training")
 
 
-    scorer = RougeScorer(["rouge2"], use_stemmer=True)
+    scorer = RougeScorer(["rouge1", "rouge2"], use_stemmer=True)
     # baseline_scores = perform_baseline(test, scorer)
     # print_results(baseline_scores, "Baseline Model")
 
